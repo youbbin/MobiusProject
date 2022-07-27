@@ -226,6 +226,25 @@ function requestLedFanState() {
     }
 }
 
+function requestLedFanPowerState(){
+    if(tas_state == 'upload'){
+         var packet_hex = "0201ff53ff00ffffffffffffffffffffffffffffffffffffffffffffff03" // 전원 상태 체크 패킷
+        var packet_bytes = hexToBytes(packet_hex);
+        myPort.write(packet_bytes); // 시리얼 포트로 전송
+        console.log("LED, FAN 전원 상태 체크 패킷 전송 >> "+packet_hex);
+
+    }
+}
+
+function requestLedFanOnOffTime(){
+    if(tas_state == 'upload'){
+        var packet_hex = "0201ff52ff00ffffffffffffffffffffffffffffffffffffffffffffff03" // 전원 상태 체크 패킷
+       var packet_bytes = hexToBytes(packet_hex);
+       myPort.write(packet_bytes); // 시리얼 포트로 전송
+       console.log("LED, FAN On/Off time 체크 패킷 전송 >> "+packet_hex);
+
+   }
+}
 function setTime(){
     if(tas_state == 'upload' ){
         var packet_hex= "0202ff54ff00ff3470ffffffffffffffffffffffffffffffffffffffff03"; // 시간 설정 패킷
@@ -236,7 +255,7 @@ function setTime(){
 }
 
 function setLedFan(data){ 
-    // data : led종류(1: red, 2: blue, 3: fan)/제어종류(on/off: 1, 세기 조절: 2)/제어값(on: 1, off: 2, 세기: 1~9)
+    // data : led종류(1: red, 2: blue, 3: fan)/제어종류(on/off: 1, 세기 조절: 2, 시간 설정: 3)/제어값(on: 1, off: 2, 세기: 1~9, 시간: hh:mm,hh:mm)
     
     var split = data.split("/");
     var channel=""; // 채널
@@ -308,7 +327,7 @@ function parsePacket(data){
         
         send_packet = "time/"+time+",temp/"+temp+",humi/"+humi+",co2/"+co2+",illum/"+ illum+ ",gas/"+gas;
         console.log("Sensor State >> "+send_packet);
-        upload_action(key, send_packet);
+        upload_action(key, send_packet); // upload
                 
     } else if(key == "0201ff73"){ // led, fan 상태 체크
         var red = parseInt(packet_parsed.substring(10,12), 16);
@@ -318,18 +337,28 @@ function parsePacket(data){
         send_packet = "red/"+red+",blue/"+blue+",fan/"+fan;
         console.log("LED/FAN State >> "+send_packet);
 
-        var packet_hex = "0201ff53ff00ffffffffffffffffffffffffffffffffffffffffffffff03" // 전원 상태 체크 패킷
-        var packet_bytes = hexToBytes(packet_hex);
-        myPort.write(packet_bytes); // 시리얼 포트로 전송
-        console.log("LED, FAN 전원 상태 체크 패킷 전송 >> "+packet_hex);
+       requestLedFanPowerState();
         
-    } else if(key == "0201ff53"){
+    } else if(key == "0201ff53"){ // led, fan 전원 상태 체크
         var power_ch1 = parseInt(packet_parsed.substring(16,18),16);
         var power_ch2 = parseInt(packet_parsed.substring(18,20),16);
         var power_ch3 = parseInt(packet_parsed.substring(20,22),16);
         send_packet += ",power_ch1/"+power_ch1+",power_ch2/"+power_ch2+",power_ch3/"+power_ch3;
-        console.log("Power State >> "+send_packet);
-        upload_action(key, send_packet);
+        console.log("전원 상태 추가한 패킷 >> "+send_packet);
+
+        requestLedFanOnOffTime();
+        
+    } else if(key == "0201ff52"){
+        var start_time_ch1 = packet_parsed.substring(10,12)+":"+packet_parsed.substring(12,14);
+        var finish_time_ch1 = packet_parsed.substring(14,16)+":"+packet_parsed.substring(16,18);
+        var start_time_ch2 = packet_parsed.substring(20,22)+":"+packet_parsed.substring(22,24);
+        var finish_time_ch2 = packet_parsed.substring(24,26)+":"+packet_parsed.substring(26,28);
+        var start_time_ch3 = packet_parsed.substring(30,32)+":"+packet_parsed.substring(32,34);
+        var finish_time_ch3 = packet_parsed.substring(34,36)+":"+packet_parsed.substring(36,38);
+        send_packet += ",start_time_ch1/" + start_time_ch1 + ",finish_time_ch1/" +finish_time_ch1 + ",start_time_ch2/" + start_time_ch2 + ",finish_time_ch2/" + 
+                        finish_time_ch2 + ",start_time_ch3/" + start_time_ch3+",finish_time_ch3/"+finish_time_ch3;
+        console.log("On/Off time 추가한 패킷 >> "+send_packet);
+        upload_action(key, send_packet); // upload
     }
 }
 
@@ -343,7 +372,7 @@ function upload_action(key, data)
             console.log(JSON.stringify(cin) + ' ---->');
             upload_client.write(JSON.stringify(cin) + '<EOF>');
         }
-        else if(key =="0201ff53"){
+        else if(key =="0201ff52"){
             var cin = {ctname: 'cnt-ledfan', con: data};
             console.log(JSON.stringify(cin) + ' ---->');
             upload_client.write(JSON.stringify(cin) + '<EOF>');
