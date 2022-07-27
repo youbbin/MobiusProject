@@ -1,0 +1,17 @@
+{
+    "host": "210.102.142.26",
+    "username": "pi",
+    "password": "raspberry",
+    "remotePath": "iot/",
+    "protocol": "sftp",
+    "port": 20122,
+    "fileNameEncoding": "utf8",
+    "autoUpload": true,
+    "autoDelete": false,
+    "autoDownload": true,
+    "ignore": [
+        ".git",
+        "/.vscode",
+        "/**/node_modules"
+    ]
+}
