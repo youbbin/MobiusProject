@@ -272,12 +272,25 @@ function setLedFan(data){
             index = "01ffffffffff"    // on
         } 
         else index = "00ffffffffff" // off
+        console.log("전원 제어")
     }
     else if(split[1] == "2"){ // 제어 명령이 세기 조절일 때
         command = "50";
         var pwm = "000064"; // 16진수 64 = 10진수 100
         var duty = "0000"+(parseInt(split[2])*10).toString(16).padStart(2,'0');
         index = pwm + duty;
+        console.log("세기 제어")
+    }
+    else if(split[1] == "3"){
+        command = "55";
+
+        var time_split = split[2].split(",");
+        var start_time_split = time_split[0].split(":");
+        var finish_time_split = time_split[1].split(":");
+        var start_time = start_time_split[0].padStart(2,'0') + start_time_split[1].padStart(2,'0');
+        var finish_time = finish_time_split[0].padStart(2,'0') + finish_time_split[1].padStart(2,'0');
+        index = start_time + finish_time+"ffff"
+        console.log("on/off 시간 설정")
     }
 
     packet ="0201ff"+command+"ff0"+channel+"ff"+index+"ffffffffffffffffffffffffffffffff03";
